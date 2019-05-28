@@ -4,20 +4,19 @@ services:
   - docker
 
 before_install:
-  - docker build -t matiascecchetto/fe-startup --build-arg nginx_amplify_key=$NGINX_AMPLIFY_KEY -f Dockerfile.dev .
+  - docker build -t matiascecchetto/docker-kube_client-test -f ./client/Dockerfile.dev .
 
 script:
-  - docker run matiascecchetto/fe-startup npm run test -- --coverage
+  - docker run matiascecchetto/docker-kube-client npm run test -- --coverage
 
-deploy:
-  provider: elasticbeanstalk
-  region: "ap-southeast-2"
-  app: "fe-startup"
-  env: "festartup-env"
-  bucket_name: "elasticbeanstalk-ap-southeast-2-805374242281"
-  bucket_path: "fe-startup"
-  on:
-    branch: master
-  access_key_id: $AWS_ACCESS_KEY
-  secret_access_key:
-    secure: "$AWS_SECRET_KEY"
+after_success:
+  - docker build -t matiascecchetto/docker-kube-client ./client
+  - docker build -t matiascecchetto/docker-kube-nginx ./nginx
+  - docker build -t matiascecchetto/docker-kube-server ./server
+  - docker build -t matiascecchetto/docker-kube-worker ./worker
+
+  - docker login -u "$REGISTRY_ID" -p "$REGISTRY_PASS"
+  - docker push matiascecchetto/docker-kube-client
+  - docker push matiascecchetto/docker-kube-nginx
+  - docker push matiascecchetto/docker-kube-server
+  - docker push matiascecchetto/docker-kube-worker
